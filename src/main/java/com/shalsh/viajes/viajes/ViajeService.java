@@ -34,6 +34,8 @@ public class ViajeService {
 	@Value("http://localhost:8081/Tarifa")
 	private String APITarifas;
 	@Value("")
+	private String APIUsuarios;
+	@Value("")
 	private String APIMonopatines;
 	
 	public ResponseEntity<ViajeDTO> finalizar(String id, ViajeDTO viaje, HttpServletRequest request) {
@@ -44,19 +46,21 @@ public class ViajeService {
 			Viaje v = vr.findById(viaje.getId()).get();
 			if(v.getFin() != null)
 				throw new IllegalArgumentException("Viaje ya finalizado");
-			ResponseEntity<MonopatinDTO> validacionMonopatin = requestMonopatinUse(viaje.getMonopatin(),request.getHeader(HttpHeaders.AUTHORIZATION), false);
-			if(validacionMonopatin.getStatusCode().equals(HttpStatus.OK)) {
+			//ResponseEntity<MonopatinDTO> validacionMonopatin = requestMonopatinUse(viaje.getMonopatin(),request.getHeader(HttpHeaders.AUTHORIZATION), false);
+			//if(validacionMonopatin.getStatusCode().equals(HttpStatus.OK)) {
 				v.setFin(new Date());
-				v.setDistancia(Double.valueOf(validacionMonopatin.getBody().getDistancia()));
+				//v.setDistancia(Double.valueOf(validacionMonopatin.getBody().getDistance()));
+				v.setDistancia(1);
 				ResponseEntity<TarifaDTO> valorViaje = requestTarifa(request.getHeader(HttpHeaders.AUTHORIZATION));
 				if (valorViaje != null) 
-					v.setCosto(Double.valueOf(valorViaje.getBody().getTarifa()*v.getDistancia()));
+					//v.setCosto(Double.valueOf(valorViaje.getBody().getTarifa()*v.getDistancia()));
+					v.setCosto(15.0);
 				else
 					throw new Exception("Error al recuperar la tarifa");
 				v = vr.save(v);
 				return new ResponseEntity<>(convert(v),HttpStatus.OK);
-			}
-			throw new IllegalArgumentException("Fallo al apagar monopatin");
+			//}
+			//throw new Exception();
 		} catch(IllegalArgumentException e) {
 			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		} catch(NoSuchElementException e) {
@@ -79,13 +83,13 @@ public class ViajeService {
 			v.setCliente(viaje.getCliente());
 			v.setMonopatin(viaje.getMonopatin());
 			v.setInicio(new Date());
-			ResponseEntity<MonopatinDTO> validacionMonopatin = requestMonopatinUse(viaje.getMonopatin(),request.getHeader(HttpHeaders.AUTHORIZATION), true);
-			if(validacionMonopatin.getStatusCode().equals(HttpStatus.OK)) {
+			//ResponseEntity<MonopatinDTO> validacionMonopatin = requestMonopatinUse(viaje.getMonopatin(),request.getHeader(HttpHeaders.AUTHORIZATION), true);
+			//if(validacionMonopatin.getStatusCode().equals(HttpStatus.OK)) {
 				v = vr.save(v);
 				ViajeDTO response = convert(v);
 				return new ResponseEntity<>(response,HttpStatus.CREATED);
-			}
-			throw new IllegalArgumentException("Monopatin no disponible para su uso");
+			//}
+			//throw new IllegalArgumentException();
 			
 		} catch (IllegalArgumentException e) {
 			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -122,9 +126,9 @@ public class ViajeService {
 		
 		try {
 			int id = Integer.valueOf(id_monopatin);
-			ResponseEntity<MonopatinDTO> monopatin = requestMonopatinInfo(id,request.getHeader(HttpHeaders.AUTHORIZATION));
-			if(monopatin.getStatusCode().equals(HttpStatus.OK)) {
-				reporte.setMonopatin(monopatin.getBody());
+			//ResponseEntity<MonopatinDTO> monopatin = requestMonopatinInfo(id,request.getHeader(HttpHeaders.AUTHORIZATION));
+			//if(monopatin.getStatusCode().equals(HttpStatus.OK)) {
+				//reporte.setMonopatin(monopatin.getBody());
 				List<ViajeDTO> viajesDto = vr.reporte(id);
 				for(ViajeDTO v : viajesDto) {
 					if (v.getFin() != null)
@@ -133,8 +137,8 @@ public class ViajeService {
 				}
 				reporte.setViajes(viajesDto);
 				return new ResponseEntity<>(reporte,HttpStatus.OK);
-			}
-			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+			//}
+			//return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		} catch(IllegalArgumentException e) {
 			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		} catch(NullPointerException e){
@@ -162,7 +166,7 @@ public class ViajeService {
 	        HttpEntity<String> req = new HttpEntity<>(header);
 	        return restTemplate.exchange(APITarifas, HttpMethod.GET, req, TarifaDTO.class);
 		}
-		return null;
+		return new ResponseEntity<>(HttpStatus.OK);
 	}
 	
 	private ResponseEntity<MonopatinDTO> requestMonopatinUse(int id_monopatin, String token, boolean viaje){
