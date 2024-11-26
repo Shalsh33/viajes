@@ -34,6 +34,7 @@ public class ViajeDTO {
 		this.fin = fin;
 		this.distancia = distancia;
 		this.costo = costo;
+		this.finalizado = (this.fin != null);
 	}
 
 	public int getId() {

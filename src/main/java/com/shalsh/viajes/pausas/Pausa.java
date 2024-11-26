@@ -13,7 +13,7 @@ public class Pausa {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private int id;
+	private Integer id;
 	
 	@Column
 	private Date inicio;

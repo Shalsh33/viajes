@@ -2,6 +2,9 @@ package com.shalsh.viajes.viajes;
 
 
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.shalsh.viajes.dto.ReporteDTO;
@@ -76,7 +80,18 @@ public class ViajeController {
 			@ApiResponse(responseCode = "401", description = "Autenticación fallida"),
 			@ApiResponse(responseCode = "500", description = "Error del servidor al procesar la solicitud")
 	})
-	public ResponseEntity<ReporteDTO> obtenerReporte(@PathVariable("id_monopatin") String id_monopatin, HttpServletRequest request){
-		return vs.reporte(id_monopatin,request);
+	public ResponseEntity<ReporteDTO> obtenerReporte(@PathVariable("id_monopatin") int id_monopatin, HttpServletRequest request){
+		return vs.reporteMonopatin(id_monopatin,request);
+	}
+	
+	@GetMapping("/reporte")
+	@Operation(summary = "Obtener Reporte", description= "Obtiene el reporte de uso de un monopatín")
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Reporte obtenido exitosamente"),
+			@ApiResponse(responseCode = "401", description = "Autenticación fallida"),
+			@ApiResponse(responseCode = "500", description = "Error del servidor al procesar la solicitud")
+	})
+	public ResponseEntity<List<ReporteDTO>> obtenerReporteTotal(HttpServletRequest request, @RequestParam() Map<String,String> params){
+		return vs.reporte(request, params);
 	}
 }

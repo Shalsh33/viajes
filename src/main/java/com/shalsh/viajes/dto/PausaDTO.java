@@ -20,6 +20,7 @@ public class PausaDTO {
 		this.inicio = inicio;
 		this.fin = fin;
 		this.viaje = viaje;
+		this.finalizada = (this.fin != null);
 	}
 	public Date getInicio() {
 		return inicio;

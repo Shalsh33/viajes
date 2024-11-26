@@ -1,6 +1,6 @@
 package com.shalsh.viajes.pausas;
 
-import java.util.ArrayList;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -11,13 +11,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.shalsh.viajes.dto.PausaDTO;
-import com.shalsh.viajes.dto.ViajeDTO;
 import com.shalsh.viajes.viajes.Viaje;
 import com.shalsh.viajes.viajes.ViajeRepository;
 
 @Service
 public class PausaService {
 	
+	final static long TIMESTAMP_CONVERT = 1000000000;
 	@Autowired
 	PausaRepository pr;
 	@Autowired
@@ -98,10 +98,18 @@ public class PausaService {
 	public ResponseEntity<PausaDTO> consultar(String id_viaje, String id_pausa) {
 		try {
 			Pausa p = pr.findById(Integer.valueOf(id_pausa)).get();
+			return new ResponseEntity<>(convert(p),HttpStatus.OK);
+		} catch(NoSuchElementException e) {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		} catch (Exception e) {
-			
+			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-		return null;
+		
+	}
+
+	public Long getTiempoPausa(Integer viaje) {
+		BigDecimal tiempo = pr.getTiempoPausa(vr.findById(viaje).get());
+		return (tiempo != null) ? tiempo.longValue()/TIMESTAMP_CONVERT : 0;
 	}
 
 }

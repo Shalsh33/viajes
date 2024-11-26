@@ -1,11 +1,14 @@
 package com.shalsh.viajes.viajes;
 
+
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -34,9 +37,9 @@ public class ViajeService {
 	@Value("http://localhost:8081/Tarifa")
 	private String APITarifas;
 	@Value("")
-	private String APIUsuarios;
-	@Value("")
 	private String APIMonopatines;
+	@Value("")
+	private String APIParadas;
 	
 	public ResponseEntity<ViajeDTO> finalizar(String id, ViajeDTO viaje, HttpServletRequest request) {
 		
@@ -57,6 +60,7 @@ public class ViajeService {
 					v.setCosto(15.0);
 				else
 					throw new Exception("Error al recuperar la tarifa");
+				//Comprobar que las pausas se hayan cerrado (TODO)
 				v = vr.save(v);
 				return new ResponseEntity<>(convert(v),HttpStatus.OK);
 			//}
@@ -120,7 +124,7 @@ public class ViajeService {
 
 	
 
-	public ResponseEntity<ReporteDTO> reporte(String id_monopatin, HttpServletRequest request) {
+	public ResponseEntity<ReporteDTO> reporteMonopatin(int id_monopatin, HttpServletRequest request) {
 		
 		ReporteDTO reporte = new ReporteDTO();
 		
@@ -159,6 +163,17 @@ public class ViajeService {
 		return null;
 	}
 	
+	private ResponseEntity<List<MonopatinDTO>> requestMonopatinList(String token) {
+		if (token != null && token.startsWith("Bearer ")) {
+			HttpHeaders header = new HttpHeaders();
+	        header.set(HttpHeaders.AUTHORIZATION, token);
+	        HttpEntity<String> req = new HttpEntity<>(header);
+	        String url = APIMonopatines;
+	        return restTemplate.exchange(url, HttpMethod.GET, req, new ParameterizedTypeReference<List<MonopatinDTO>>(){});
+		}
+		return null;
+	}
+	
 	private ResponseEntity<TarifaDTO> requestTarifa(String token) {
 		if (token != null && token.startsWith("Bearer ")) {
 			HttpHeaders header = new HttpHeaders();
@@ -174,10 +189,17 @@ public class ViajeService {
 			HttpHeaders header = new HttpHeaders();
 	        header.set(HttpHeaders.AUTHORIZATION, token);
 	        ResponseEntity<MonopatinDTO> m = requestMonopatinInfo(id_monopatin,token);
-	        if(m.getStatusCode().equals(HttpStatus.OK) && m.getBody().isDisponible() == viaje) {
+	        //si la solicitud se completó
+	        if(m.getStatusCode().equals(HttpStatus.OK) && 
+	        		//Y el valor de is disponible es igual al que recibo como parámetro
+	        		// (si va a iniciar un viaje tiene que estar disponible y vice versa)
+	        		m.getBody().isDisponible() == viaje) {
 	        	m.getBody().setDisponible(!viaje);
 	        
 		        HttpEntity<MonopatinDTO> req = new HttpEntity<>(m.getBody(),header);
+		        
+		        /*Ajustar url*/
+		        
 		        String url = APIMonopatines + "/" + id_monopatin;
 		        //hacer con put (mando el monopatin entero)
 		        return restTemplate.exchange(url, HttpMethod.PUT, req, MonopatinDTO.class);
@@ -204,4 +226,34 @@ public class ViajeService {
 			result.setPausas(ps.getPausas(viaje));
 			return result;
 		}
+
+
+
+		public ResponseEntity<List<ReporteDTO>> reporte(HttpServletRequest request, Map<String, String> params) {
+
+			boolean pausas = (params.containsKey("pausas") && params.get("pausas").equalsIgnoreCase("true"));
+			int viajesMinimos = (params.containsKey("viajesMin")) ? Integer.valueOf(params.get("viajesMin")) : 0;
+			try {
+				//ResponseEntity<List<MonopatinDTO>> monopatines = requestMonopatinList(request.getHeader(HttpHeaders.AUTHORIZATION));
+				//if (monopatines.getStatusCode().equals(HttpStatus.OK)) {
+					List<ReporteDTO> reporte = vr.reporteUnico(viajesMinimos);
+					for(ReporteDTO r:reporte) {						
+						List<ViajeDTO> viajes = vr.reporte(r.getMonopatin());
+						for(ViajeDTO v:viajes) {
+							v.setPausas(ps.reporte(v.getId()));
+							if(!pausas)
+								r.setTiempoViaje(r.getTiempoViaje() - ps.getTiempoPausa(v.getId()));
+						}
+						r.setViajes(viajes);
+					}
+					
+					return new ResponseEntity<>(reporte,HttpStatus.OK);
+					
+				//}
+			} catch (Exception e) {
+				e.printStackTrace();	
+				return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+		}
+		
 }
